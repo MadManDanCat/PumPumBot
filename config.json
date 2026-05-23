@@ -51,7 +51,7 @@
     "botDuelMax": 5000
   },
   "songRequest": {
-    "enabled": false,
+    "enabled": true,
     "cost": 100,
     "maxQueue": 10,
     "maxDurationSec": 480,

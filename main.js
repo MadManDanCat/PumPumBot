@@ -272,25 +272,16 @@ ipcMain.handle('bot:dbOk', () => bot.isDbOk());
 // Song Requests — audio fetched in main, sent to renderer as ArrayBuffer
 ipcMain.handle('sr:next', async () => {
   const song = await bot.sr.nextSong();
-  if (!song || !song.streamUrl) return null;
-  try {
-    const res = await fetch(song.streamUrl);
-    if (!res.ok) return null;
-    const buf = Buffer.from(await res.arrayBuffer());
-    const audio = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
-    // buf goes out of scope here — GC can reclaim the main-process copy
-    return {
-      videoId: song.videoId,
-      title: song.title,
-      durationSec: song.durationSec,
-      requester: song.requester,
-      audio,
-      mimeType: song.streamType === 'opus' ? 'audio/webm' : 'audio/mp4',
-    };
-  } catch (e) {
-    console.error('[sr] audio fetch error:', e.message);
-    return null;
-  }
+  if (!song || !song.audio) return null;
+  const audio = song.audio.buffer.slice(song.audio.byteOffset, song.audio.byteOffset + song.audio.byteLength);
+  return {
+    videoId: song.videoId,
+    title: song.title,
+    durationSec: song.durationSec,
+    requester: song.requester,
+    audio,
+    mimeType: song.mimeType || 'audio/webm',
+  };
 });
 ipcMain.handle('sr:queue', () => bot.sr.getQueueInfo());
 ipcMain.handle('sr:volume', (_e, level) => {
