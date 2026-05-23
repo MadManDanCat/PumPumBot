@@ -1,6 +1,6 @@
 {
   "name": "pumpumbot",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "description": "Foolproof Twitch chat-to-TTS desktop app",
   "main": "main.js",
   "scripts": {
