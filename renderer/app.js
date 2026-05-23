@@ -58,7 +58,12 @@ async function loadCfg() {
   els.elApiKey.value = cfg.elevenLabsApiKey || '';
   paintBigToggle();
 }
+let _saveTimer = null;
 async function saveCfg() { await window.api.setConfig(cfg); }
+function saveCfgDebounced() {
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(saveCfg, 300);
+}
 
 // ---------- UI helpers ----------
 function paintBigToggle() {
@@ -325,12 +330,12 @@ els.skip.addEventListener('click', skipCurrent);
 els.volume.addEventListener('input', () => {
   cfg.volume = els.volume.value / 100;
   els.volumeVal.textContent = els.volume.value + '%';
-  saveCfg();
+  saveCfgDebounced();
 });
 els.rate.addEventListener('input', () => {
   cfg.rate = els.rate.value / 100;
   els.rateVal.textContent = (els.rate.value / 100).toFixed(2) + 'x';
-  saveCfg();
+  saveCfgDebounced();
 });
 els.voice.addEventListener('change', () => {
   cfg.voice = els.voice.value;
@@ -382,7 +387,8 @@ async function pollBets() {
     }
   } catch {}
 }
-setInterval(pollBets, 4000);
+// Poll bets infrequently — just a fallback sync (bets are short-lived)
+setInterval(pollBets, 15000);
 
 // ---------- Init ----------
 // Main auto-connects on launch if a channel is configured; the renderer

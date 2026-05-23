@@ -120,11 +120,22 @@ function ensurePiper(voiceFile) {
   });
 }
 
+// Pre-check once at startup — no need to hit the filesystem per message
+const _validVoices = new Set();
+function validateVoicePaths() {
+  _validVoices.clear();
+  if (!fs.existsSync(PIPER_EXE)) return;
+  try {
+    for (const f of fs.readdirSync(VOICES_DIR)) {
+      if (f.endsWith('.onnx')) _validVoices.add(f);
+    }
+  } catch {}
+}
+
 function synthesize(text, voiceFile, lengthScale) {
   return new Promise((resolve, reject) => {
-    if (!fs.existsSync(PIPER_EXE)) return reject(new Error('Piper binary missing: ' + PIPER_EXE));
-    const modelPath = path.join(VOICES_DIR, voiceFile);
-    if (!fs.existsSync(modelPath)) return reject(new Error('Voice model missing: ' + modelPath));
+    if (!_validVoices.size) return reject(new Error('Piper binary or voices missing'));
+    if (!_validVoices.has(voiceFile)) return reject(new Error('Voice not found: ' + voiceFile));
 
     try {
       ensurePiper(voiceFile);
@@ -178,23 +189,28 @@ async function refreshElevenLabsVoices(apiKey) {
 }
 
 // ---------- Config ----------
+let _cachedConfig = null;
+
 function loadConfig() {
+  if (_cachedConfig) return _cachedConfig;
   const defaults = JSON.parse(fs.readFileSync(DEFAULT_CONFIG_PATH, 'utf8'));
   try {
     if (!fs.existsSync(CONFIG_PATH)) {
       fs.copyFileSync(DEFAULT_CONFIG_PATH, CONFIG_PATH);
+      _cachedConfig = defaults;
       return defaults;
     }
-    // Merge so keys added in a new version (e.g. ignoreUsers) land on an
-    // existing install that predates them — the saved file wins for keys it has.
     const saved = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
-    return { ...defaults, ...saved };
+    _cachedConfig = { ...defaults, ...saved };
+    return _cachedConfig;
   } catch {
+    _cachedConfig = defaults;
     return defaults;
   }
 }
 
 function saveConfig(cfg) {
+  _cachedConfig = cfg;
   fs.writeFileSync(CONFIG_PATH, JSON.stringify(cfg, null, 2));
 }
 
@@ -261,12 +277,14 @@ ipcMain.handle('sr:next', async () => {
     const res = await fetch(song.streamUrl);
     if (!res.ok) return null;
     const buf = Buffer.from(await res.arrayBuffer());
+    const audio = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+    // buf goes out of scope here — GC can reclaim the main-process copy
     return {
       videoId: song.videoId,
       title: song.title,
       durationSec: song.durationSec,
       requester: song.requester,
-      audio: buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength),
+      audio,
       mimeType: song.streamType === 'opus' ? 'audio/webm' : 'audio/mp4',
     };
   } catch (e) {
@@ -299,6 +317,7 @@ ipcMain.handle('update:install', () => { autoUpdater.quitAndInstall(); return tr
 
 // ---------- App lifecycle ----------
 app.whenReady().then(() => {
+  validateVoicePaths();
   createWindow();
 
   // Economy DB lives next to the config in userData.
