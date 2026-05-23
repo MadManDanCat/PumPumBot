@@ -1,6 +1,6 @@
 {
   "name": "pumpumbot",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Foolproof Twitch chat-to-TTS desktop app",
   "main": "main.js",
   "scripts": {
@@ -75,6 +75,7 @@
     }
   },
   "dependencies": {
+    "@distube/ytdl-core": "^4.16.12",
     "better-sqlite3": "^11.3.0",
     "electron-updater": "^6.8.3",
     "play-dl": "^1.9.7",
