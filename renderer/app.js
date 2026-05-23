@@ -544,9 +544,13 @@ async function refreshSrQueue() {
 }
 
 // SR events from main process
+let srEventCount = 0;
 window.api.onSrEvent(({ type, data }) => {
+  srEventCount++;
+  srNowPlaying.classList.remove('idle');
+  srNowPlaying.textContent = `SR EVENT #${srEventCount}: ${type}`;
+
   if (type === 'enqueued') {
-    // A new song was queued — start playing if nothing is playing
     if (!musicPlaying) playNextSong();
     else refreshSrQueue();
   }
