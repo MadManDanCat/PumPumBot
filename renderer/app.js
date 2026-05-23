@@ -422,6 +422,10 @@ window.api.onUpdateStatus(({ state, msg }) => {
     updateBtn.hidden = true;
     updateTitle.textContent = 'UPDATE ERROR';
     updateIcon.style.animation = 'none';
+  } else if (state === 'downloading') {
+    updateBtn.hidden = true;
+    updateTitle.textContent = 'DOWNLOADING';
+    updateIcon.style.animation = '';
   } else {
     updateBtn.hidden = true;
     updateTitle.textContent = 'UPDATING...';
