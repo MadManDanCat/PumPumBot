@@ -406,7 +406,8 @@ const updateIcon = document.querySelector('.update-icon');
 const updateTitle = document.querySelector('.update-title');
 
 window.api.onUpdateStatus(({ state, msg }) => {
-  if (state === 'idle' || !msg) {
+  // Only show the bar for downloading / ready — not during the silent check
+  if (state === 'idle' || state === 'checking' || !msg) {
     updateBar.hidden = true;
     updateBtn.hidden = true;
     return;
