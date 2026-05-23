@@ -1,0 +1,31 @@
+{
+  "appId": "com.pumpumbot.chat",
+  "productName": "PumPumBot Chat",
+  "directories": { "output": "dist-bot" },
+  "extraMetadata": { "main": "bot-app/main.js" },
+  "files": [
+    "bot-app/**/*",
+    "lib/**/*",
+    "botconfig.json",
+    "icon.png",
+    "node_modules/**/*"
+  ],
+  "asarUnpack": [
+    "node_modules/better-sqlite3/**/*",
+    "node_modules/bindings/**/*",
+    "node_modules/file-uri-to-path/**/*"
+  ],
+  "npmRebuild": true,
+  "win": {
+    "icon": "icon.png",
+    "target": [
+      { "target": "nsis", "arch": ["x64"] },
+      { "target": "portable", "arch": ["x64"] }
+    ]
+  },
+  "nsis": {
+    "oneClick": true,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": false
+  }
+}

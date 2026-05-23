@@ -1,0 +1,18 @@
+node_modules/
+dist/
+dist-bot/
+out/
+*.log
+.DS_Store
+.claude/
+
+# Piper — entire vendor folder is binary blobs, too large for GitHub.
+# These live on your build machine; electron-builder bundles them via extraResources.
+vendor/
+
+# SQLite economy DB
+*.sqlite
+*.sqlite-journal
+
+# Never commit tokens / secrets
+botconfig.json

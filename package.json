@@ -1,0 +1,79 @@
+{
+  "name": "pumpumbot",
+  "version": "1.0.0",
+  "description": "Foolproof Twitch chat-to-TTS desktop app",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win --x64",
+    "start:bot": "electron bot-app/main.js",
+    "build:bot": "electron-builder --win --x64 --config electron-builder-bot.json"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@electron/rebuild": "^4.0.4",
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.pumpumbot.app",
+    "productName": "PumPumBot",
+    "files": [
+      "main.js",
+      "preload.js",
+      "lib/**/*",
+      "renderer/**/*",
+      "config.json",
+      "icon.png",
+      "node_modules/**/*"
+    ],
+    "asarUnpack": [
+      "node_modules/better-sqlite3/**/*",
+      "node_modules/bindings/**/*",
+      "node_modules/file-uri-to-path/**/*"
+    ],
+    "publish": [{
+      "provider": "github",
+      "owner": "madmandancat",
+      "repo": "PumPumBot"
+    }],
+    "npmRebuild": true,
+    "extraResources": [
+      {
+        "from": "vendor/piper",
+        "to": "vendor/piper",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "icon": "icon.png",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false
+    }
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.3.0",
+    "electron-updater": "^6.8.3",
+    "ws": "^8.18.0"
+  }
+}

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self';" />
+  <title>PumPumBot Chat</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">PP</div>
+      <div>
+        <div class="title">PumPumBot Chat</div>
+        <div class="subtitle">// Chat bot · no TTS</div>
+      </div>
+    </div>
+    <div id="status" class="status disconnected">
+      <span class="dot"></span><span id="statusText">Not connected</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="card">
+      <div class="card-title">// Channel</div>
+      <div class="row">
+        <span class="prefix">twitch.tv /</span>
+        <input id="channel" type="text" placeholder="channel_name" autocomplete="off" spellcheck="false" />
+        <button id="connectBtn" class="btn primary">Connect</button>
+      </div>
+      <div class="econ"><span id="econStatus" class="econ-pill">ECONOMY: …</span></div>
+      <div id="betStrip" class="betstrip" hidden></div>
+      <details class="adv">
+        <summary>Advanced — bot token</summary>
+        <label class="f">
+          <span>OAuth token <span class="dim">(kept on this PC only)</span></span>
+          <input id="botToken" type="password" autocomplete="off" spellcheck="false" placeholder="oauth:…" />
+        </label>
+        <button id="saveBtn" class="btn">Save &amp; Reconnect</button>
+      </details>
+    </section>
+
+    <section class="card grow">
+      <div class="card-title">// Activity</div>
+      <div id="log" class="log"></div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; media-src 'self' blob:; connect-src wss://irc-ws.chat.twitch.tv:443;" />
+  <title>PumPumBot</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path fill="currentColor" d="M3 10v4h3l5 4V6L6 10H3zm12.5 2c0-1.77-1-3.29-2.5-4.03v8.05c1.5-.73 2.5-2.25 2.5-4.02zM13 4.07v2.06c2.89.86 5 3.54 5 6.87s-2.11 6.01-5 6.87v2.06c4.01-.91 7-4.49 7-8.93s-2.99-8.02-7-8.93z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="title">PumPumBot</div>
+        <div class="subtitle">// Twitch_Chat_Reader v1.0</div>
+      </div>
+    </div>
+    <div id="status" class="status disconnected">
+      <span class="dot"></span>
+      <span id="statusText">No Signal</span>
+    </div>
+  </header>
+
+  <div id="updateBar" class="update-bar" hidden>
+    <span id="updateMsg"></span>
+    <button id="updateBtn" class="btn update-btn" hidden>
+      <span>Restart &amp; Update</span>
+    </button>
+  </div>
+
+  <main>
+
+    <!-- Step 1 -->
+    <section class="step card">
+      <div class="step-num">01</div>
+      <div class="step-body">
+        <div class="step-label">Channel · Target</div>
+        <div class="channel-row">
+          <span class="channel-prefix">twitch.tv /</span>
+          <input id="channel" type="text" placeholder="your_channel_name" autocomplete="off" spellcheck="false" />
+          <button id="connectBtn" class="btn primary">
+            <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M10 17l5-5-5-5v10z"/></svg>
+            <span>Link Up</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 2 — hero toggle -->
+    <section class="step card hero-card">
+      <div class="step-num">02</div>
+      <div class="step-body">
+        <div class="step-label">Voice · Master Switch</div>
+        <button id="ttsToggle" class="big-toggle on" aria-pressed="true">
+          <span class="big-toggle-icon">
+            <svg viewBox="0 0 24 24" width="36" height="36"><path fill="currentColor" d="M3 10v4h3l5 4V6L6 10H3zm12.5 2c0-1.77-1-3.29-2.5-4.03v8.05c1.5-.73 2.5-2.25 2.5-4.02zM13 4.07v2.06c2.89.86 5 3.54 5 6.87s-2.11 6.01-5 6.87v2.06c4.01-.91 7-4.49 7-8.93s-2.99-8.02-7-8.93z"/></svg>
+          </span>
+          <span class="big-toggle-text">
+            <span class="big-toggle-state">Reader Online</span>
+            <span class="big-toggle-hint">// Tap To Disengage</span>
+          </span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Filters -->
+    <section class="card">
+      <div class="card-title">Filters</div>
+      <div class="switches">
+        <label class="switch">
+          <input type="checkbox" id="subOnly" />
+          <span class="switch-pill"></span>
+          <span class="switch-text">
+            <span class="switch-label">Subs Only</span>
+            <span class="switch-desc">// Only Read Subscribers</span>
+          </span>
+        </label>
+        <label class="switch">
+          <input type="checkbox" id="modOnly" />
+          <span class="switch-pill"></span>
+          <span class="switch-text">
+            <span class="switch-label">Mods Only</span>
+            <span class="switch-desc">// Lock To Moderators</span>
+          </span>
+        </label>
+        <label class="switch">
+          <input type="checkbox" id="mute" />
+          <span class="switch-pill danger"></span>
+          <span class="switch-text">
+            <span class="switch-label">Silence</span>
+            <span class="switch-desc">// Pause Without Disconnect</span>
+          </span>
+        </label>
+      </div>
+      <button id="skip" class="btn skip-btn">
+        <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+        <span>Skip Current</span>
+      </button>
+    </section>
+
+    <!-- Sound -->
+    <section class="card">
+      <div class="card-title">Audio</div>
+      <div class="slider-block">
+        <div class="slider-row">
+          <span class="slider-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3z"/></svg>
+          </span>
+          <span class="slider-name">Volume</span>
+          <span class="slider-value" id="volumeVal">90%</span>
+        </div>
+        <input id="volume" type="range" min="0" max="100" value="90" />
+      </div>
+      <div class="slider-block">
+        <div class="slider-row">
+          <span class="slider-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M13 2.05v3.03c3.39.49 6 3.39 6 6.92 0 .9-.18 1.75-.5 2.54l2.6 1.53c.56-1.24.9-2.62.9-4.07 0-5.18-3.95-9.45-9-9.95zM12 19c-3.87 0-7-3.13-7-7 0-3.53 2.61-6.43 6-6.92V2.05c-5.06.5-9 4.76-9 9.95 0 5.52 4.47 10 9.99 10 3.31 0 6.24-1.61 8.06-4.09l-2.6-1.53C16.17 17.98 14.21 19 12 19z"/></svg>
+          </span>
+          <span class="slider-name">Speed</span>
+          <span class="slider-value" id="rateVal">1.05x</span>
+        </div>
+        <input id="rate" type="range" min="50" max="200" value="105" />
+      </div>
+      <div class="slider-block">
+        <div class="slider-row">
+          <span class="slider-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+          </span>
+          <span class="slider-name">Voice</span>
+        </div>
+        <select id="voice"></select>
+      </div>
+      <details class="bot-advanced">
+        <summary>ElevenLabs — accent voices (Cockney, Jamaican, etc.)</summary>
+        <label class="bot-field">
+          <span class="bot-field-label">API Key <span class="dim">(from elevenlabs.io — $5/mo starter)</span></span>
+          <input id="elApiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk_xxxxxxxxxxxxxxxx" />
+        </label>
+        <div class="bot-row">
+          <button id="elSave" class="btn primary"><span>Save Key</span></button>
+          <span id="elStatus" class="dim"></span>
+        </div>
+      </details>
+    </section>
+
+    <!-- Chat Bot / write mode -->
+    <section class="card">
+      <div class="card-title">Chat Bot</div>
+      <label class="switch">
+        <input type="checkbox" id="writeEnabled" />
+        <span class="switch-pill"></span>
+        <span class="switch-text">
+          <span class="switch-label">Enable Bot</span>
+          <span class="switch-desc">// Lets the bot type in chat (needs a token)</span>
+        </span>
+      </label>
+      <div id="botFields" class="bot-fields" hidden>
+        <div class="bot-row">
+          <span id="econStatus" class="econ-status mono"></span>
+        </div>
+        <details class="bot-advanced">
+          <summary>Advanced — change bot account</summary>
+          <label class="bot-field">
+            <span class="bot-field-label">Bot Twitch username <span class="dim">(optional — auto-detected from token)</span></span>
+            <input id="botUser" type="text" autocomplete="off" spellcheck="false" placeholder="auto" />
+          </label>
+          <label class="bot-field">
+            <span class="bot-field-label">OAuth token <span class="dim">(kept on this PC only)</span></span>
+            <input id="botToken" type="password" autocomplete="off" spellcheck="false" placeholder="oauth:xxxxxxxxxxxxxxxxxxxx" />
+          </label>
+          <div class="bot-row">
+            <button id="botSave" class="btn primary"><span>Save &amp; Reconnect</span></button>
+          </div>
+        </details>
+      </div>
+      <div id="betStrip" class="bet-strip" hidden></div>
+    </section>
+
+    <!-- Live -->
+    <section class="card live-card">
+      <div class="card-title">Live Feed</div>
+      <div class="now-row">
+        <div id="speakerIcon" class="speaker-icon">
+          <svg viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M3 10v4h3l5 4V6L6 10H3zm12.5 2c0-1.77-1-3.29-2.5-4.03v8.05c1.5-.73 2.5-2.25 2.5-4.02z"/></svg>
+        </div>
+        <div id="nowReading" class="now-reading idle">// Standby — Awaiting Chat</div>
+      </div>
+      <div id="queueWrap" class="queue-wrap" hidden>
+        <div class="card-title small">Queue</div>
+        <ul id="queue" class="queue"></ul>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
