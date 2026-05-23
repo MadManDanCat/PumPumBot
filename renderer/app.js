@@ -467,7 +467,17 @@ function unduckMusic() {
 }
 
 async function playNextSong() {
-  const data = await window.api.srNext();
+  srNowPlaying.classList.remove('idle');
+  srNowPlaying.textContent = 'Loading song...';
+
+  let data;
+  try {
+    data = await window.api.srNext();
+  } catch (e) {
+    srNowPlaying.textContent = 'ERROR: ' + e.message;
+    return;
+  }
+
   if (!data) {
     musicPlaying = false;
     currentSrSong = null;
@@ -476,15 +486,20 @@ async function playNextSong() {
     srQueueWrap.hidden = true;
     return;
   }
+
+  if (!data.audio || !data.audio.byteLength) {
+    srNowPlaying.textContent = 'ERROR: Empty audio buffer';
+    window.api.srEnded();
+    return;
+  }
+
   currentSrSong = data;
-  srNowPlaying.classList.remove('idle');
-  srNowPlaying.innerHTML = `<b>${escapeHtml(data.requester)}</b> &nbsp; ${escapeHtml(data.title)}`;
+  srNowPlaying.innerHTML = `<b>${escapeHtml(data.requester)}</b> &nbsp; ${escapeHtml(data.title)} (${Math.round(data.audio.byteLength / 1024)}KB)`;
 
   const blob = new Blob([data.audio], { type: data.mimeType || 'audio/webm' });
   const url = URL.createObjectURL(blob);
   musicAudio = new Audio(url);
   musicAudio.volume = musicVolume / 100;
-  // Duck if TTS is currently speaking
   if (speaking) musicAudio.volume = (musicVolume / 100) * 0.15;
 
   musicAudio.onended = () => {
@@ -494,21 +509,21 @@ async function playNextSong() {
     window.api.srEnded();
     playNextSong();
   };
-  musicAudio.onerror = () => {
+  musicAudio.onerror = (e) => {
+    srNowPlaying.textContent = `PLAY ERROR: ${musicAudio.error?.message || 'unknown'} (type: ${data.mimeType})`;
     URL.revokeObjectURL(url);
     musicPlaying = false;
     currentSrSong = null;
     window.api.srEnded();
-    setTimeout(playNextSong, 500);
   };
 
   try {
     await musicAudio.play();
     musicPlaying = true;
   } catch (e) {
-    console.error('Music playback failed:', e);
+    srNowPlaying.textContent = 'PLAY FAILED: ' + e.message;
     musicPlaying = false;
-    setTimeout(playNextSong, 500);
+    return;
   }
 
   refreshSrQueue();
