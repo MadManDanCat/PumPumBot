@@ -1,6 +1,6 @@
 {
   "name": "pumpumbot",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Foolproof Twitch chat-to-TTS desktop app",
   "main": "main.js",
   "scripts": {
@@ -33,11 +33,13 @@
       "node_modules/bindings/**/*",
       "node_modules/file-uri-to-path/**/*"
     ],
-    "publish": [{
-      "provider": "github",
-      "owner": "madmandancat",
-      "repo": "PumPumBot"
-    }],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "MadManDanCat",
+        "repo": "PumPumBot"
+      }
+    ],
     "npmRebuild": true,
     "extraResources": [
       {
@@ -74,6 +76,7 @@
   "dependencies": {
     "better-sqlite3": "^11.3.0",
     "electron-updater": "^6.8.3",
+    "play-dl": "^1.9.7",
     "ws": "^8.18.0"
   }
 }

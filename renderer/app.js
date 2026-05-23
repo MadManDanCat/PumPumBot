@@ -66,8 +66,8 @@ function paintBigToggle() {
   els.ttsToggle.classList.toggle('on', on);
   els.ttsToggle.classList.toggle('off', !on);
   els.ttsToggle.setAttribute('aria-pressed', on ? 'true' : 'false');
-  els.ttsToggle.querySelector('.big-toggle-state').textContent = on ? 'Reading is ON' : 'Reading is OFF';
-  els.ttsToggle.querySelector('.big-toggle-hint').textContent = on ? 'Click to stop' : 'Click';
+  els.ttsToggle.querySelector('.big-toggle-state').textContent = on ? 'Reading' : 'Paused';
+  els.ttsToggle.querySelector('.big-toggle-hint').textContent = on ? 'Tap to stop' : 'Tap to start';
 }
 function setStatus(state, label) {
   els.status.classList.remove('connected', 'disconnected', 'connecting');
@@ -168,7 +168,7 @@ async function speakNext() {
   const item = queue.shift();
   renderQueue();
   if (!item) {
-    els.nowReading.textContent = 'Nothing right now — waiting for chat';
+    els.nowReading.textContent = 'Waiting for chat';
     els.nowReading.classList.add('idle');
     setSpeakingIndicator(false);
     return;
@@ -205,15 +205,18 @@ async function speakNext() {
       currentAudio = null;
       speaking = false;
       setSpeakingIndicator(false);
+      unduckMusic();
       setTimeout(speakNext, 60);
     };
     audio.onended = done;
     audio.onerror = done;
+    duckMusic();
     await audio.play();
   } catch (err) {
     console.error('Piper synthesis failed:', err);
     speaking = false;
     setSpeakingIndicator(false);
+    unduckMusic();
     setTimeout(speakNext, 60);
   }
 }
@@ -264,6 +267,7 @@ function skipCurrent() {
   if (currentAudio) { try { currentAudio.pause(); } catch {} currentAudio = null; }
   speaking = false;
   setSpeakingIndicator(false);
+  unduckMusic();
   setTimeout(speakNext, 60);
 }
 
@@ -386,7 +390,7 @@ setInterval(pollBets, 4000);
 (async () => {
   await loadCfg();
   await populateVoices();
-  setStatus('disconnected', 'Not connected');
+  setStatus('disconnected', 'Offline');
   refreshEconStatus();
   pollBets();
 })();
@@ -398,6 +402,9 @@ const updateBar = $('updateBar');
 const updateMsg = $('updateMsg');
 const updateBtn = $('updateBtn');
 
+const updateIcon = document.querySelector('.update-icon');
+const updateTitle = document.querySelector('.update-title');
+
 window.api.onUpdateStatus(({ state, msg }) => {
   if (state === 'idle' || !msg) {
     updateBar.hidden = true;
@@ -406,9 +413,136 @@ window.api.onUpdateStatus(({ state, msg }) => {
   }
   updateBar.hidden = false;
   updateMsg.textContent = msg;
-  updateBtn.hidden = state !== 'ready';
+  if (state === 'ready') {
+    updateBtn.hidden = false;
+    updateTitle.textContent = 'UPDATE READY';
+    updateIcon.style.animation = 'none';
+  } else {
+    updateBtn.hidden = true;
+    updateTitle.textContent = 'UPDATING...';
+    updateIcon.style.animation = '';
+  }
 });
 
 updateBtn.addEventListener('click', () => {
   window.api.installUpdate();
+});
+
+// ---------- Song Requests ----------
+let musicAudio = null;
+let musicVolume = 50;
+let musicPlaying = false;
+let currentSrSong = null;
+
+const srNowPlaying = $('srNowPlaying');
+const srQueueWrap = $('srQueueWrap');
+const srQueueEl = $('srQueue');
+const srVolumeSlider = $('srVolume');
+const srVolVal = $('srVolVal');
+
+function duckMusic() {
+  if (musicAudio && musicPlaying) {
+    musicAudio.volume = (musicVolume / 100) * 0.15;
+  }
+}
+function unduckMusic() {
+  if (musicAudio && musicPlaying) {
+    musicAudio.volume = musicVolume / 100;
+  }
+}
+
+async function playNextSong() {
+  const data = await window.api.srNext();
+  if (!data) {
+    musicPlaying = false;
+    currentSrSong = null;
+    srNowPlaying.textContent = 'No music playing';
+    srNowPlaying.classList.add('idle');
+    srQueueWrap.hidden = true;
+    return;
+  }
+  currentSrSong = data;
+  srNowPlaying.classList.remove('idle');
+  srNowPlaying.innerHTML = `<b>${escapeHtml(data.requester)}</b> &nbsp; ${escapeHtml(data.title)}`;
+
+  const blob = new Blob([data.audio], { type: data.mimeType || 'audio/webm' });
+  const url = URL.createObjectURL(blob);
+  musicAudio = new Audio(url);
+  musicAudio.volume = musicVolume / 100;
+  // Duck if TTS is currently speaking
+  if (speaking) musicAudio.volume = (musicVolume / 100) * 0.15;
+
+  musicAudio.onended = () => {
+    URL.revokeObjectURL(url);
+    musicPlaying = false;
+    currentSrSong = null;
+    window.api.srEnded();
+    playNextSong();
+  };
+  musicAudio.onerror = () => {
+    URL.revokeObjectURL(url);
+    musicPlaying = false;
+    currentSrSong = null;
+    window.api.srEnded();
+    setTimeout(playNextSong, 500);
+  };
+
+  try {
+    await musicAudio.play();
+    musicPlaying = true;
+  } catch (e) {
+    console.error('Music playback failed:', e);
+    musicPlaying = false;
+    setTimeout(playNextSong, 500);
+  }
+
+  refreshSrQueue();
+}
+
+async function refreshSrQueue() {
+  try {
+    const info = await window.api.srQueue();
+    srQueueEl.innerHTML = '';
+    const items = (info.upcoming || []).slice(0, 5);
+    srQueueWrap.hidden = items.length === 0;
+    for (const song of items) {
+      const li = document.createElement('li');
+      li.innerHTML = `<b>${escapeHtml(song.requester)}</b> &nbsp; ${escapeHtml(song.title)}`;
+      srQueueEl.appendChild(li);
+    }
+  } catch {}
+}
+
+// SR events from main process
+window.api.onSrEvent(({ type, data }) => {
+  if (type === 'enqueued') {
+    // A new song was queued — start playing if nothing is playing
+    if (!musicPlaying) playNextSong();
+    else refreshSrQueue();
+  }
+  if (type === 'skip') {
+    if (musicAudio) { try { musicAudio.pause(); } catch {} musicAudio = null; }
+    musicPlaying = false;
+    currentSrSong = null;
+    window.api.srEnded();
+    playNextSong();
+  }
+  if (type === 'volume') {
+    musicVolume = data;
+    srVolumeSlider.value = musicVolume;
+    srVolVal.textContent = musicVolume + '%';
+    if (musicAudio && musicPlaying) {
+      musicAudio.volume = speaking ? (musicVolume / 100) * 0.15 : musicVolume / 100;
+    }
+  }
+});
+
+// Music volume slider
+srVolumeSlider.addEventListener('input', () => {
+  musicVolume = parseInt(srVolumeSlider.value, 10);
+  srVolVal.textContent = musicVolume + '%';
+  if (musicAudio && musicPlaying) {
+    musicAudio.volume = speaking ? (musicVolume / 100) * 0.15 : musicVolume / 100;
+  }
+  window.api.srSetVolume(musicVolume);
 });

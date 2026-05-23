@@ -253,6 +253,34 @@ ipcMain.handle('bot:disconnect', () => { bot.stop(); return true; });
 ipcMain.handle('bot:betStatus', () => bot.betStatus());
 ipcMain.handle('bot:dbOk', () => bot.isDbOk());
 
+// Song Requests — audio fetched in main, sent to renderer as ArrayBuffer
+ipcMain.handle('sr:next', async () => {
+  const song = await bot.sr.nextSong();
+  if (!song || !song.streamUrl) return null;
+  try {
+    const res = await fetch(song.streamUrl);
+    if (!res.ok) return null;
+    const buf = Buffer.from(await res.arrayBuffer());
+    return {
+      videoId: song.videoId,
+      title: song.title,
+      durationSec: song.durationSec,
+      requester: song.requester,
+      audio: buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength),
+      mimeType: song.streamType === 'opus' ? 'audio/webm' : 'audio/mp4',
+    };
+  } catch (e) {
+    console.error('[sr] audio fetch error:', e.message);
+    return null;
+  }
+});
+ipcMain.handle('sr:queue', () => bot.sr.getQueueInfo());
+ipcMain.handle('sr:volume', (_e, level) => {
+  bot.sr.setVolume(level, { mod: true });
+  return true;
+});
+ipcMain.handle('sr:ended', () => { bot.sr.songEnded(); return true; });
+
 // ---------- Auto-updater ----------
 autoUpdater.autoDownload = true;
 autoUpdater.autoInstallOnAppQuit = true;
@@ -278,6 +306,7 @@ app.whenReady().then(() => {
   bot.setHandlers({
     onStatus: (state, label) => send('bot:status', { state, label }),
     onChat: (m) => send('chat:message', m),
+    onSrEvent: (type, data) => send('sr:event', { type, data }),
   });
 
   // Pre-fetch ElevenLabs voices if an API key is configured.

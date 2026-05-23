@@ -49,5 +49,12 @@
     "botDuelWinChance": 0.52,
     "botDuelCooldownMs": 60000,
     "botDuelMax": 5000
+  },
+  "songRequest": {
+    "enabled": true,
+    "cost": 100,
+    "maxQueue": 10,
+    "maxDurationSec": 480,
+    "defaultVolume": 50
   }
 }
