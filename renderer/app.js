@@ -481,9 +481,13 @@ async function playNextSong() {
   if (!data) {
     musicPlaying = false;
     currentSrSong = null;
-    srNowPlaying.textContent = 'No music playing';
-    srNowPlaying.classList.add('idle');
-    srQueueWrap.hidden = true;
+    srNowPlaying.textContent = 'ERROR: nextSong returned null';
+    return;
+  }
+
+  if (data.error) {
+    srNowPlaying.textContent = 'STREAM ERROR: ' + data.error;
+    window.api.srEnded();
     return;
   }
 

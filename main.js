@@ -272,7 +272,9 @@ ipcMain.handle('bot:dbOk', () => bot.isDbOk());
 // Song Requests — audio fetched in main, sent to renderer as ArrayBuffer
 ipcMain.handle('sr:next', async () => {
   const song = await bot.sr.nextSong();
-  if (!song || !song.audio) return null;
+  if (!song) return null;
+  if (song.error) return { error: song.error };
+  if (!song.audio) return { error: 'No audio data returned' };
   const audio = song.audio.buffer.slice(song.audio.byteOffset, song.audio.byteOffset + song.audio.byteLength);
   return {
     videoId: song.videoId,
