@@ -1,6 +1,6 @@
 {
   "name": "pumpumbot",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "description": "Foolproof Twitch chat-to-TTS desktop app",
   "main": "main.js",
   "scripts": {
@@ -70,7 +70,8 @@
     "nsis": {
       "oneClick": true,
       "perMachine": false,
-      "allowToChangeInstallationDirectory": false
+      "allowToChangeInstallationDirectory": false,
+      "artifactName": "${productName}-Setup-${version}.${ext}"
     }
   },
   "dependencies": {

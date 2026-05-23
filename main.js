@@ -293,7 +293,7 @@ autoUpdater.on('update-available', (info) => sendUpdate('downloading', `Download
 autoUpdater.on('update-not-available', () => sendUpdate('idle', ''));
 autoUpdater.on('download-progress', (p) => sendUpdate('downloading', `Downloading… ${Math.round(p.percent)}%`));
 autoUpdater.on('update-downloaded', (info) => sendUpdate('ready', `v${info.version} ready — restart to update`));
-autoUpdater.on('error', () => sendUpdate('idle', ''));
+autoUpdater.on('error', (err) => sendUpdate('error', err?.message || 'Update failed'));
 
 ipcMain.handle('update:install', () => { autoUpdater.quitAndInstall(); return true; });
 

@@ -406,7 +406,7 @@ const updateIcon = document.querySelector('.update-icon');
 const updateTitle = document.querySelector('.update-title');
 
 window.api.onUpdateStatus(({ state, msg }) => {
-  // Only show the bar for downloading / ready — not during the silent check
+  // Only show the bar for downloading / ready / error — not during the silent check
   if (state === 'idle' || state === 'checking' || !msg) {
     updateBar.hidden = true;
     updateBtn.hidden = true;
@@ -417,6 +417,10 @@ window.api.onUpdateStatus(({ state, msg }) => {
   if (state === 'ready') {
     updateBtn.hidden = false;
     updateTitle.textContent = 'UPDATE READY';
+    updateIcon.style.animation = 'none';
+  } else if (state === 'error') {
+    updateBtn.hidden = true;
+    updateTitle.textContent = 'UPDATE ERROR';
     updateIcon.style.animation = 'none';
   } else {
     updateBtn.hidden = true;
