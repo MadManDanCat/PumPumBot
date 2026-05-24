@@ -269,28 +269,11 @@ ipcMain.handle('bot:disconnect', () => { bot.stop(); return true; });
 ipcMain.handle('bot:betStatus', () => bot.betStatus());
 ipcMain.handle('bot:dbOk', () => bot.isDbOk());
 
-// Song Requests — audio fetched in main, sent to renderer as ArrayBuffer
-ipcMain.handle('sr:next', async () => {
-  const song = await bot.sr.nextSong();
-  if (!song) return null;
-  if (song.error) return { error: song.error };
-  if (!song.audio) return { error: 'No audio data returned' };
-  const audio = song.audio.buffer.slice(song.audio.byteOffset, song.audio.byteOffset + song.audio.byteLength);
-  return {
-    videoId: song.videoId,
-    title: song.title,
-    durationSec: song.durationSec,
-    requester: song.requester,
-    audio,
-    mimeType: song.mimeType || 'audio/webm',
-  };
-});
-ipcMain.handle('sr:queue', () => bot.sr.getQueueInfo());
-ipcMain.handle('sr:volume', (_e, level) => {
-  bot.sr.setVolume(level, { mod: true });
-  return true;
-});
-ipcMain.handle('sr:ended', () => { bot.sr.songEnded(); return true; });
+// Song Requests — disabled for now
+ipcMain.handle('sr:next', () => null);
+ipcMain.handle('sr:queue', () => ({ current: null, upcoming: [], volume: 50 }));
+ipcMain.handle('sr:volume', () => true);
+ipcMain.handle('sr:ended', () => true);
 
 // ---------- Auto-updater ----------
 autoUpdater.autoDownload = true;
