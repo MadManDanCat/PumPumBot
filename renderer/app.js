@@ -96,6 +96,13 @@ async function populateVoices() {
     els.voice.appendChild(o);
     return;
   }
+  // "Random" option — picks a different voice for every message
+  const rnd = document.createElement('option');
+  rnd.value = '__random__';
+  rnd.textContent = 'Random';
+  if (cfg.voice === '__random__') rnd.selected = true;
+  els.voice.appendChild(rnd);
+
   for (const v of piperVoices) {
     const o = document.createElement('option');
     o.value = v.id;
@@ -103,7 +110,7 @@ async function populateVoices() {
     if (v.id === cfg.voice) o.selected = true;
     els.voice.appendChild(o);
   }
-  if (!cfg.voice || !piperVoices.some(v => v.id === cfg.voice)) {
+  if (!cfg.voice || (cfg.voice !== '__random__' && !piperVoices.some(v => v.id === cfg.voice))) {
     cfg.voice = piperVoices[0].id;
     els.voice.value = cfg.voice;
     saveCfg();
@@ -196,10 +203,15 @@ async function speakNext() {
   const lengthScale = 1 / (cfg.rate || 1.0);
 
   try {
+    // Pick a random voice each message if "Random" is selected
+    let voice = cfg.voice;
+    if (voice === '__random__' && piperVoices.length) {
+      voice = piperVoices[Math.floor(Math.random() * piperVoices.length)].id;
+    }
     const wavArrayBuf = await window.api.ttsSynthesize({
-      text: phrase, voice: cfg.voice, lengthScale
+      text: phrase, voice, lengthScale
     });
-    const mime = cfg.voice.startsWith('el:') ? 'audio/mpeg' : 'audio/wav';
+    const mime = voice.startsWith('el:') ? 'audio/mpeg' : 'audio/wav';
     const blob = new Blob([wavArrayBuf], { type: mime });
     const url = URL.createObjectURL(blob);
     const audio = new Audio(url);
